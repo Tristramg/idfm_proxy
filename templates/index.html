@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <script src="https://unpkg.com/htmx.org@1.8.2"></script>
+    </head>
+    <body>
+        Hello!
+
+        <div hx-ws="connect:/ws">
+            <div id="chat_room">
+            </div>
+            <form hx-ws="send:submit">
+                <input name="chat_message">
+            </form>
+        </div>
+
+        <div id="messages">
+        </div>
+
+    </body>
+</html>
