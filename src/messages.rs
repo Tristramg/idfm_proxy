@@ -1,25 +1,16 @@
+use std::sync::Arc;
+
 use actix::prelude::*;
-use serde::{Deserialize, Serialize};
-
-#[derive(Message)]
-#[rtype(result = "Result<bool, std::io::Error>")]
-pub struct Recieved {
-    pub msg: String,
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct Broadcast {
-    pub msg: String,
-}
+use siri_lite::service_delivery::EstimatedVehicleJourney;
 
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Connect {
-    pub addr: Recipient<Broadcast>,
+    pub addr: Recipient<UpdateVJs>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct HtmxMessage {
-    pub chat_message: String,
+#[derive(Message, Clone)]
+#[rtype(result = "()")]
+pub struct UpdateVJs {
+    pub vjs: Arc<Vec<EstimatedVehicleJourney>>,
 }

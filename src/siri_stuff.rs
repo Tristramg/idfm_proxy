@@ -1,47 +1,74 @@
-/*
+use crate::{central_dispatch::CentralDispatch, messages::UpdateVJs};
+use actix::prelude::*;
+use color_eyre::eyre::{eyre, Result};
+use siri_lite::{service_delivery::EstimatedVehicleJourney, siri::SiriResponse};
+use std::sync::Arc;
 
-struct AppState {
-    uri: String,
-    apikey: String,
-    siri: Option<siri_lite::siri::Siri>,
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct FetchSiri;
+
+#[derive(Clone)]
+pub struct SiriFetcher {
+    pub dispatch: Addr<CentralDispatch>,
+    pub vehicle_journeys: Arc<Vec<EstimatedVehicleJourney>>,
+    pub uri: String,
+    pub apikey: String,
 }
 
-impl AppState {
-    async fn update(&mut self) -> Result<(DateTime<Utc>, chrono::Duration)> {
-        let start = Utc::now();
-        let client = reqwest::Client::new();
-        let resp = client
-            .get(&self.uri)
-            .header("apikey", &self.apikey)
-            .query(&[("LineRef", "ALL")])
-            .send()
-            .await?
-            .text()
-            .await?;
-        self.siri = Some(serde_json::from_str(&resp)?);
+impl Actor for SiriFetcher {
+    type Context = Context<Self>;
+    fn started(&mut self, ctx: &mut Self::Context) {
+        tracing::info!("Starting the siri fetcher!");
+        self.update_vjs(ctx);
 
-        let end = Utc::now();
-        Ok((end, end - start))
+        ctx.run_interval(std::time::Duration::from_secs(90), |act, ctx| {
+            act.update_vjs(ctx)
+        });
+    }
+}
+impl SiriFetcher {
+    fn update_vjs(&mut self, ctx: &mut Context<Self>) {
+        let u = self.uri.clone();
+        let k = self.apikey.clone();
+
+        fetch(u, k)
+            .into_actor(self)
+            .map(|r, act, _ctx| match r {
+                Ok(vjs) => act.dispatch.do_send(UpdateVJs { vjs: Arc::new(vjs) }),
+                Err(e) => tracing::info!(" {e}"),
+            })
+            .wait(ctx);
     }
 }
 
-let state = Arc::new(Mutex::new(AppState {
-    uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
-    apikey: "".to_string(),
-    siri: None,
-}));
+async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourney>> {
+    tracing::info!("Starting fetching");
+    let response = reqwest::Client::new()
+        .get(uri)
+        .header("apikey", apikey)
+        .query(&[("LineRef", "ALL")])
+        .send()
+        .await
+        .map_err(|err| eyre!("Siri request: could execute the query: {err}"))?
+        .text()
+        .await
+        .map_err(|err| eyre!("Siri: could not extract request body: {err} "))?;
 
-let _state2 = state.clone();
-  tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_secs(60));
-    loop {
-        interval.tick().await;
+    tracing::info!("Got the timetable, starting parsing");
+    let estimated_vehicle_journeys = serde_json::from_str::<SiriResponse>(&response)
+        .map_err(|err| eyre!("Siri: could not parse json: {err}"))?
+        .siri
+        .service_delivery
+        .ok_or(eyre!("Siri: could not find service_delivery"))?
+        .estimated_timetable_delivery
+        .into_iter()
+        .flat_map(|delivery| {
+            delivery
+                .estimated_journey_version_frame
+                .into_iter()
+                .flat_map(|frame| frame.estimated_vehicle_journey)
+        });
 
-        println!("Lancement mise-à-jour {}", Utc::now());
-        let mut data = state2.lock().await;
-        match data.update().await {
-            Ok((end, duration)) => println!("...Mise-à-jour finie à {:?} ({}s) — nombre deliveries {}", end, duration.num_seconds(), data.siri.as_ref().unwrap().service_delivery.as_ref().unwrap().estimated_timetable_delivery.len()),
-            err => println!("Erreur… {:?}", err)
-        }
-    }
-});*/
+    Ok(estimated_vehicle_journeys.collect())
+}

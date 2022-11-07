@@ -1,7 +1,6 @@
 use crate::central_dispatch::CentralDispatch;
-use crate::messages::{Broadcast, Connect, HtmxMessage, Recieved};
+use crate::messages::{Connect, UpdateVJs};
 use actix::prelude::*;
-use actix_web::web::Buf;
 use actix_web_actors::ws;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
@@ -11,29 +10,28 @@ impl Actor for SessionActor {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        println!("We have a new actor !");
+        tracing::info!("New session actor started");
         self.central.do_send(Connect {
             addr: ctx.address().recipient(),
         })
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        println!("Actor is stopped");
+        tracing::info!("Session actor is stopped");
     }
 }
 
-impl Handler<Broadcast> for SessionActor {
+impl Handler<UpdateVJs> for SessionActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Broadcast, ctx: &mut Self::Context) {
-        println!("Broadcast reçu ! {}", msg.msg);
+    fn handle(&mut self, msg: UpdateVJs, ctx: &mut Self::Context) {
+        let len = msg.vjs.len();
         let text = format!(
             r#"
-<div id="messages" hx-swap-oob="beforeend">
-    {}
+<div id="messages">
+    Nous avons <b>{len}</b> vehicle journeys
 </div>
-"#,
-            msg.msg
+"#
         );
         ctx.text(text)
     }
@@ -44,14 +42,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionActor {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
-            Ok(ws::Message::Text(text)) => {
-                let htmx_message: HtmxMessage = serde_json::from_reader(text.into_bytes().reader())
-                    .expect("impossible de lire le message htmx");
-                let msg = Recieved {
-                    msg: htmx_message.chat_message,
-                };
-                self.central.do_send(msg);
-            }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             _ => (),
         }
