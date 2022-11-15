@@ -10,7 +10,7 @@ actix-web = "4"
 tokio = "1"
 chrono = "0.4"
 reqwest = { version = "0.11", features = ["json", "gzip"] }
-siri-lite = {path = "../siri-lite"}
+siri-lite = { git = "https://github.com/rust-transit/siri-lite.git", branch = "estimated_timetable" }
 serde = "1"
 serde_json = "1"
 askama="*"
@@ -20,4 +20,3 @@ actix="*"
 color-eyre = "0.6.2"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
-multimap = "0.8"

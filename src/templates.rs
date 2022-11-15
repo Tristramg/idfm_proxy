@@ -1,5 +1,4 @@
 use askama_actix::Template;
-use siri_lite::service_delivery::EstimatedVehicleJourney;
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -8,7 +7,7 @@ pub struct Index;
 #[derive(Template)]
 #[template(path = "line_list.html")]
 pub struct LineList<'a> {
-    pub vjs: &'a multimap::MultiMap<String, EstimatedVehicleJourney>,
+    pub lines: &'a Vec<crate::Line>,
 }
 
 pub mod filters {
