@@ -95,9 +95,7 @@ async fn fetch(uri: String, apikey: String) -> Result<crate::PTData> {
             .push(vj);
     }
 
-    Ok(crate::PTData {
-        lines: line_by_id.into_values().collect(),
-    })
+    Ok(crate::PTData { lines: line_by_id })
 }
 
 fn handle_unparsable(err: serde_json::Error, response: &str) -> ErrReport {

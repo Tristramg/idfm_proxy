@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use siri_lite::service_delivery::EstimatedVehicleJourney;
 
 pub struct PTData {
-    pub lines: Vec<Line>,
+    pub lines: HashMap<String, Line>,
 }
 
 pub struct Line {

@@ -5,6 +5,7 @@ use actix_web_actors::ws;
 use askama::Template;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
+    pub watching: Watching,
 }
 
 pub enum Watching {
@@ -32,10 +33,28 @@ impl Handler<DataUpdate> for SessionActor {
     type Result = ();
 
     fn handle(&mut self, msg: DataUpdate, ctx: &mut Self::Context) {
-        let template = crate::templates::LineList {
-            lines: msg.pt_data.lines.as_ref(),
-        };
-        ctx.text(template.render().unwrap())
+        match self.watching {
+            Watching::Index => {
+                let template = crate::templates::Lines {
+                    lines: &msg.pt_data.lines,
+                };
+                ctx.text(template.render().unwrap())
+            }
+            Watching::Line(ref line_ref) => {
+                let l = msg.pt_data.lines.get(line_ref);
+                if let Some(line) = l {
+                    let line_template = crate::templates::Line { line: line };
+                    ctx.text(line_template.render().unwrap())
+                } else {
+                    // 404
+                    let line_not_found_template = crate::templates::LineNotFound {
+                        line_ref: line_ref.as_str(),
+                    };
+                    ctx.text(line_not_found_template.render().unwrap())
+                }
+            }
+            Watching::Point(_) => unimplemented!("point not implemented"),
+        }
     }
 }
 

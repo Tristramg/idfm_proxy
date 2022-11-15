@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use askama_actix::Template;
 
 #[derive(Template)]
@@ -5,9 +7,27 @@ use askama_actix::Template;
 pub struct Index;
 
 #[derive(Template)]
+#[template(path = "line_index.html")]
+pub struct LineIndex {
+    pub line_ref: String,
+}
+
+#[derive(Template)]
 #[template(path = "line_list.html")]
-pub struct LineList<'a> {
-    pub lines: &'a Vec<crate::Line>,
+pub struct Lines<'a> {
+    pub lines: &'a HashMap<String, crate::Line>,
+}
+
+#[derive(Template)]
+#[template(path = "line.html")]
+pub struct Line<'a> {
+    pub line: &'a crate::Line,
+}
+
+#[derive(Template)]
+#[template(path = "line_not_found.html")]
+pub struct LineNotFound<'a> {
+    pub line_ref: &'a str,
 }
 
 pub mod filters {

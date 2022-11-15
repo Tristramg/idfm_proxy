@@ -1,0 +1,9 @@
+<div id="line">
+    <h1>{{line.mode}} {{line.name}}</h1>
+
+    <ul>
+        {% for vj in line.vjs %}
+        {% include "vj_summary.html" %}
+        {% endfor %}
+    </ul>
+</div>
