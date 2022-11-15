@@ -50,7 +50,7 @@ async fn main() -> color_eyre::Result<()> {
 
     let dispatch_addr = CentralDispatch {
         sessions: Vec::new(),
-        vjs: None,
+        pt_data: None,
     }
     .start();
 

@@ -1,9 +1,8 @@
-use crate::{central_dispatch::CentralDispatch, messages::UpdateVJs};
+use crate::{central_dispatch::CentralDispatch, messages::DataUpdate};
 use actix::prelude::*;
 use color_eyre::eyre::{eyre, ErrReport, Result};
-use multimap::MultiMap;
-use siri_lite::{service_delivery::EstimatedVehicleJourney, siri::SiriResponse};
-use std::{io::Write, sync::Arc};
+use siri_lite::siri::SiriResponse;
+use std::{collections::HashMap, io::Write, sync::Arc};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -35,14 +34,16 @@ impl SiriFetcher {
         fetch(u, k)
             .into_actor(self)
             .map(|r, act, _ctx| match r {
-                Ok(vjs) => act.dispatch.do_send(UpdateVJs { vjs: Arc::new(vjs) }),
+                Ok(data) => act.dispatch.do_send(DataUpdate {
+                    pt_data: Arc::new(data),
+                }),
                 Err(e) => tracing::info!(" {e}"),
             })
             .wait(ctx);
     }
 }
 
-async fn fetch(uri: String, apikey: String) -> Result<MultiMap<String, EstimatedVehicleJourney>> {
+async fn fetch(uri: String, apikey: String) -> Result<crate::PTData> {
     tracing::info!("Starting fetching");
     let response = reqwest::Client::builder()
         .gzip(true)
@@ -58,7 +59,10 @@ async fn fetch(uri: String, apikey: String) -> Result<MultiMap<String, Estimated
         .map_err(|err| eyre!("Siri: could not extract request body: {err} "))?;
 
     tracing::info!("Got the timetable, starting parsing");
-    let estimated_vehicle_journeys = serde_json::from_str::<SiriResponse>(&response)
+
+    let mut line_by_id = HashMap::new();
+
+    for vj in serde_json::from_str::<SiriResponse>(&response)
         .map_err(|err| {
             println!("meh, {response}");
             handle_unparsable(err, &response)
@@ -74,9 +78,26 @@ async fn fetch(uri: String, apikey: String) -> Result<MultiMap<String, Estimated
                 .into_iter()
                 .flat_map(|frame| frame.estimated_vehicle_journey)
         })
-        .map(|vj| (vj.line_ref.value.clone(), vj));
+    {
+        line_by_id
+            .entry(vj.line_ref.value.clone())
+            .or_insert_with(|| crate::Line {
+                name: vj
+                    .published_line_name
+                    .first()
+                    .map(|v| v.value.clone())
+                    .unwrap_or("no name".into()),
+                mode: vj.vehicle_mode.first().cloned().unwrap_or("no mode".into()),
+                id: vj.line_ref.value.clone(),
+                vjs: vec![],
+            })
+            .vjs
+            .push(vj);
+    }
 
-    Ok(estimated_vehicle_journeys.collect())
+    Ok(crate::PTData {
+        lines: line_by_id.into_values().collect(),
+    })
 }
 
 fn handle_unparsable(err: serde_json::Error, response: &str) -> ErrReport {

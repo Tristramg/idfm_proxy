@@ -1,5 +1,5 @@
 use crate::central_dispatch::CentralDispatch;
-use crate::messages::{Connect, UpdateVJs};
+use crate::messages::{Connect, DataUpdate};
 use actix::prelude::*;
 use actix_web_actors::ws;
 use askama::Template;
@@ -28,12 +28,12 @@ impl Actor for SessionActor {
     }
 }
 
-impl Handler<UpdateVJs> for SessionActor {
+impl Handler<DataUpdate> for SessionActor {
     type Result = ();
 
-    fn handle(&mut self, msg: UpdateVJs, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: DataUpdate, ctx: &mut Self::Context) {
         let template = crate::templates::LineList {
-            vjs: msg.vjs.as_ref(),
+            lines: msg.pt_data.lines.as_ref(),
         };
         ctx.text(template.render().unwrap())
     }

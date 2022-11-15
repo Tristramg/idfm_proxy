@@ -1,13 +1,13 @@
 <div id="messages">
     <ul>
-    {% for (line, vj_list) in vjs %}
-        <li>{{line}}: {{vj_list.len()}}
-             <ul>
-                {% for vj in vj_list %}
-                    {% include "vj_summary.html" %}
+        {% for line in lines %}
+        <li>{{line.name}}: {{line.vjs.len()}}
+            <ul>
+                {% for vj in line.vjs %}
+                {% include "vj_summary.html" %}
                 {% endfor %}
-             </ul>
+            </ul>
         </li>
-    {% endfor %}
+        {% endfor %}
     </ul>
 </div>

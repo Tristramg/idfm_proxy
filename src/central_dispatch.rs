@@ -1,12 +1,11 @@
-use multimap::MultiMap;
 use std::sync::Arc;
 
-use crate::messages::{Connect, UpdateVJs};
+use crate::messages::{Connect, DataUpdate};
 use actix::prelude::*;
-use siri_lite::service_delivery::EstimatedVehicleJourney;
+
 pub struct CentralDispatch {
-    pub sessions: Vec<Recipient<UpdateVJs>>,
-    pub vjs: Option<Arc<MultiMap<String, EstimatedVehicleJourney>>>,
+    pub sessions: Vec<Recipient<DataUpdate>>,
+    pub pt_data: Option<Arc<crate::PTData>>,
 }
 
 impl Actor for CentralDispatch {
@@ -19,18 +18,20 @@ impl Handler<Connect> for CentralDispatch {
     fn handle(&mut self, msg: Connect, _ctx: &mut Self::Context) -> Self::Result {
         tracing::info!("New watcher");
         self.sessions.push(msg.addr.clone());
-        if let Some(vjs) = &self.vjs {
-            msg.addr.do_send(UpdateVJs { vjs: vjs.clone() });
+        if let Some(pt) = &self.pt_data {
+            msg.addr.do_send(DataUpdate {
+                pt_data: pt.clone(),
+            });
         }
     }
 }
 
-impl Handler<UpdateVJs> for CentralDispatch {
+impl Handler<DataUpdate> for CentralDispatch {
     type Result = ();
 
-    fn handle(&mut self, msg: UpdateVJs, _ctx: &mut Self::Context) {
-        tracing::info!("Fresh SIRI data with {} vehicle journeys", msg.vjs.len());
-        self.vjs = Some(msg.vjs.clone());
+    fn handle(&mut self, msg: DataUpdate, _ctx: &mut Self::Context) {
+        tracing::info!("Fresh SIRI data with {} lines", msg.pt_data.lines.len());
+        self.pt_data = Some(msg.pt_data.clone());
         for session in &self.sessions {
             session.do_send(msg.clone());
         }
