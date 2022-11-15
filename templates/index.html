@@ -3,14 +3,10 @@
         <script src="https://unpkg.com/htmx.org@1.8.2"></script>
     </head>
     <body>
+        <h1>Proxy temps réel Île-de-France mobilités</h1>
         Hello!
 
         <div hx-ws="connect:/ws">
-            <div id="chat_room">
-            </div>
-            <form hx-ws="send:submit">
-                <input name="chat_message">
-            </form>
         </div>
 
         <div id="messages">

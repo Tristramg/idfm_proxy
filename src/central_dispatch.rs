@@ -1,3 +1,4 @@
+use multimap::MultiMap;
 use std::sync::Arc;
 
 use crate::messages::{Connect, UpdateVJs};
@@ -5,7 +6,7 @@ use actix::prelude::*;
 use siri_lite::service_delivery::EstimatedVehicleJourney;
 pub struct CentralDispatch {
     pub sessions: Vec<Recipient<UpdateVJs>>,
-    pub vjs: Option<Arc<Vec<EstimatedVehicleJourney>>>,
+    pub vjs: Option<Arc<MultiMap<String, EstimatedVehicleJourney>>>,
 }
 
 impl Actor for CentralDispatch {

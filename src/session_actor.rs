@@ -2,8 +2,15 @@ use crate::central_dispatch::CentralDispatch;
 use crate::messages::{Connect, UpdateVJs};
 use actix::prelude::*;
 use actix_web_actors::ws;
+use askama::Template;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
+}
+
+pub enum Watching {
+    Index,
+    Line(String),
+    Point(String),
 }
 
 impl Actor for SessionActor {
@@ -25,15 +32,10 @@ impl Handler<UpdateVJs> for SessionActor {
     type Result = ();
 
     fn handle(&mut self, msg: UpdateVJs, ctx: &mut Self::Context) {
-        let len = msg.vjs.len();
-        let text = format!(
-            r#"
-<div id="messages">
-    Nous avons <b>{len}</b> vehicle journeys
-</div>
-"#
-        );
-        ctx.text(text)
+        let template = crate::templates::LineList {
+            vjs: msg.vjs.as_ref(),
+        };
+        ctx.text(template.render().unwrap())
     }
 }
 

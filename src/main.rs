@@ -3,11 +3,11 @@ use std::str::FromStr;
 use actix::prelude::*;
 use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
-use askama_actix::Template;
 use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
 use idfm_proxy::session_actor::SessionActor;
 use idfm_proxy::siri_stuff::SiriFetcher;
+use idfm_proxy::templates;
 use tracing_subscriber::{filter::targets::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[get("/ws")]
@@ -27,17 +27,12 @@ async fn websocket(
     )
 }
 
-#[derive(Template)]
-#[template(path = "index.html")]
-struct HelloTemplate;
-
 #[get("/")]
 async fn index() -> impl Responder {
-    HelloTemplate {}
+    templates::Index {}
 }
 
-#[actix_web::main]
-async fn main() -> color_eyre::Result<()> {
+fn setup_logger() {
     color_eyre::install().unwrap();
 
     let filter_layer =
@@ -47,6 +42,11 @@ async fn main() -> color_eyre::Result<()> {
         .with(filter_layer)
         .with(format_layer)
         .init();
+}
+
+#[actix_web::main]
+async fn main() -> color_eyre::Result<()> {
+    setup_logger();
 
     let dispatch_addr = CentralDispatch {
         sessions: Vec::new(),
@@ -57,7 +57,6 @@ async fn main() -> color_eyre::Result<()> {
     let _siri_fetcher = SiriFetcher {
         apikey: "".to_string(),
         uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
-        vehicle_journeys: std::sync::Arc::new(Vec::new()),
         dispatch: dispatch_addr.clone(),
     }
     .start();

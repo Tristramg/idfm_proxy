@@ -1,3 +1,4 @@
+use multimap::MultiMap;
 use std::sync::Arc;
 
 use actix::prelude::*;
@@ -12,5 +13,5 @@ pub struct Connect {
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
 pub struct UpdateVJs {
-    pub vjs: Arc<Vec<EstimatedVehicleJourney>>,
+    pub vjs: Arc<MultiMap<String, EstimatedVehicleJourney>>,
 }

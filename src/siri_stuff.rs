@@ -1,8 +1,9 @@
 use crate::{central_dispatch::CentralDispatch, messages::UpdateVJs};
 use actix::prelude::*;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, ErrReport, Result};
+use multimap::MultiMap;
 use siri_lite::{service_delivery::EstimatedVehicleJourney, siri::SiriResponse};
-use std::sync::Arc;
+use std::{io::Write, sync::Arc};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -11,7 +12,6 @@ pub struct FetchSiri;
 #[derive(Clone)]
 pub struct SiriFetcher {
     pub dispatch: Addr<CentralDispatch>,
-    pub vehicle_journeys: Arc<Vec<EstimatedVehicleJourney>>,
     pub uri: String,
     pub apikey: String,
 }
@@ -42,12 +42,15 @@ impl SiriFetcher {
     }
 }
 
-async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourney>> {
+async fn fetch(uri: String, apikey: String) -> Result<MultiMap<String, EstimatedVehicleJourney>> {
     tracing::info!("Starting fetching");
-    let response = reqwest::Client::new()
+    let response = reqwest::Client::builder()
+        .gzip(true)
+        .build()?
         .get(uri)
         .header("apikey", apikey)
         .query(&[("LineRef", "ALL")])
+        //.gzip(true)
         .send()
         .await
         .map_err(|err| eyre!("Siri request: could execute the query: {err}"))?
@@ -57,7 +60,10 @@ async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourne
 
     tracing::info!("Got the timetable, starting parsing");
     let estimated_vehicle_journeys = serde_json::from_str::<SiriResponse>(&response)
-        .map_err(|err| eyre!("Siri: could not parse json: {err}"))?
+        .map_err(|err| {
+            println!("meh, {response}");
+            handle_unparsable(err, &response)
+        })?
         .siri
         .service_delivery
         .ok_or(eyre!("Siri: could not find service_delivery"))?
@@ -68,7 +74,22 @@ async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourne
                 .estimated_journey_version_frame
                 .into_iter()
                 .flat_map(|frame| frame.estimated_vehicle_journey)
-        });
+        })
+        .map(|vj| (vj.line_ref.value.clone(), vj));
 
     Ok(estimated_vehicle_journeys.collect())
+}
+
+fn handle_unparsable(err: serde_json::Error, response: &str) -> ErrReport {
+    let filename = format!(
+        "siri_estimated_timetable_{}.json",
+        chrono::offset::Utc::now().to_rfc3339()
+    );
+    let mut file = std::fs::File::create(&filename)
+        .map_err(|err| eyre!("Could not create file for failed siri: {err}"))
+        .unwrap();
+    file.write(response.as_bytes())
+        .map_err(|err| eyre!("Could not write failed siri to disk: {err}"))
+        .unwrap();
+    eyre!("Siri: could not parse json: {err}, see file in {filename}")
 }
