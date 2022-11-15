@@ -5,7 +5,7 @@ use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder}
 use actix_web_actors::ws;
 use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
-use idfm_proxy::session_actor::SessionActor;
+use idfm_proxy::session_actor::{SessionActor, Watching};
 use idfm_proxy::siri_stuff::SiriFetcher;
 use idfm_proxy::templates;
 use tracing_subscriber::{filter::targets::Targets, layer::SubscriberExt, util::SubscriberInitExt};
@@ -21,6 +21,26 @@ async fn websocket(
     ws::start(
         SessionActor {
             central: central.as_ref().clone(),
+            watching: Watching::Index,
+        },
+        &req,
+        stream,
+    )
+}
+
+#[get("/ws/lines/{line_ref}")]
+async fn line_websocket(
+    req: HttpRequest,
+    line_ref: web::Path<String>,
+    stream: web::Payload,
+    central: web::Data<Addr<CentralDispatch>>,
+) -> Result<HttpResponse, actix_web::Error> {
+    tracing::info!("new websocket watching {line_ref}");
+
+    ws::start(
+        SessionActor {
+            central: central.as_ref().clone(),
+            watching: Watching::Line(line_ref.clone()),
         },
         &req,
         stream,
@@ -30,6 +50,13 @@ async fn websocket(
 #[get("/")]
 async fn index() -> impl Responder {
     templates::Index {}
+}
+
+#[get("/lines/{id}")]
+async fn line(line_ref: web::Path<String>) -> impl Responder {
+    templates::LineIndex {
+        line_ref: line_ref.to_string(),
+    }
 }
 
 fn setup_logger() {
@@ -55,7 +82,7 @@ async fn main() -> color_eyre::Result<()> {
     .start();
 
     let _siri_fetcher = SiriFetcher {
-        apikey: "".to_string(),
+        apikey: std::env::var("API_KEY").as_deref().unwrap().to_string(),
         uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
         dispatch: dispatch_addr.clone(),
     }
@@ -65,7 +92,9 @@ async fn main() -> color_eyre::Result<()> {
         App::new()
             .app_data(web::Data::new(dispatch_addr.clone()))
             .service(index)
+            .service(line)
             .service(websocket)
+            .service(line_websocket)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

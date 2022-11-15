@@ -1,0 +1,20 @@
+<html>
+
+<head>
+    <script src="https://unpkg.com/htmx.org@1.8.2"></script>
+</head>
+
+<body>
+    <h1>Proxy temps réel Île-de-France mobilités pour la ligne {{line_ref}}</h1>
+    Hello!
+
+    <div hx-ws="connect:/ws/lines/{{line_ref}}">
+    </div>
+
+    <div id="line">
+        <p>Pour l’instant pas de données, veuillez patienter</p>
+    </div>
+
+</body>
+
+</html>
