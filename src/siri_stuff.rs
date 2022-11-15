@@ -50,7 +50,6 @@ async fn fetch(uri: String, apikey: String) -> Result<MultiMap<String, Estimated
         .get(uri)
         .header("apikey", apikey)
         .query(&[("LineRef", "ALL")])
-        //.gzip(true)
         .send()
         .await
         .map_err(|err| eyre!("Siri request: could execute the query: {err}"))?
