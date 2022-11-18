@@ -1,17 +1,20 @@
-<html>
-    <head>
-        <script src="https://unpkg.com/htmx.org@1.8.2"></script>
-    </head>
-    <body>
-        <h1>Proxy temps réel Île-de-France mobilités</h1>
-        Hello!
+{% extends "base.html" %}
+{% block title %}Temps réel Île-de-France Mobilités{% endblock %}
 
-        <div hx-ws="connect:/ws">
-        </div>
+{% block content %}
+<h1>Proxy temps réel Île-de-France Mobilités</h1>
 
-        <div id="messages">
-            <p>Pour l’instant pas de données, veuillez patienter</p>
-        </div>
+<div class="hero hero-sm bg-primary">
+    <div class="hero-body">
+        <h2>Présentation du projet</h2>
+        <p>Proxy pour les données Île-de-France</p>
+    </div>
+</div>
 
-    </body>
-</html>
+<div hx-ws="connect:/ws">
+</div>
+
+<div id="messages">
+    <p>Pour l’instant pas de données, veuillez patienter</p>
+</div>
+{% endblock %}
