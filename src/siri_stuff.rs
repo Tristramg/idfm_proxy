@@ -86,8 +86,12 @@ async fn fetch(uri: String, apikey: String) -> Result<crate::PTData> {
                     .published_line_name
                     .first()
                     .map(|v| v.value.clone())
-                    .unwrap_or("no name".into()),
-                mode: vj.vehicle_mode.first().cloned().unwrap_or("no mode".into()),
+                    .unwrap_or_else(|| "no name".into()),
+                mode: vj
+                    .vehicle_mode
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "no mode".into()),
                 id: vj.line_ref.value.clone(),
                 vjs: vec![],
             })

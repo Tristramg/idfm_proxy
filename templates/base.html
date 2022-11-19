@@ -1,0 +1,15 @@
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://unpkg.com/htmx.org@1.8.2"></script>
+        <link rel="stylesheet" href="/static/css/spectre.min.css">
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>{% block title %}{{ title }}{% endblock %}</title>
+    </head>
+    <body>
+        <main class="container common__container grid-lg">
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>

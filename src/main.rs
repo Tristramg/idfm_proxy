@@ -82,7 +82,10 @@ async fn main() -> color_eyre::Result<()> {
     .start();
 
     let _siri_fetcher = SiriFetcher {
-        apikey: std::env::var("API_KEY").as_deref().unwrap().to_string(),
+        apikey: std::env::var("API_KEY")
+            .as_deref()
+            .expect("Missing API_KEY environment variable")
+            .to_string(),
         uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
         dispatch: dispatch_addr.clone(),
     }
@@ -91,6 +94,7 @@ async fn main() -> color_eyre::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(dispatch_addr.clone()))
+            .service(actix_files::Files::new("/static", "./static"))
             .service(index)
             .service(line)
             .service(websocket)

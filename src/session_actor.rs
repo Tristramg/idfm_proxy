@@ -43,7 +43,7 @@ impl Handler<DataUpdate> for SessionActor {
             Watching::Line(ref line_ref) => {
                 let l = msg.pt_data.lines.get(line_ref);
                 if let Some(line) = l {
-                    let line_template = crate::templates::Line { line: line };
+                    let line_template = crate::templates::Line { line };
                     ctx.text(line_template.render().unwrap())
                 } else {
                     // 404
