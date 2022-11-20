@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use actix::prelude::*;
-use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
@@ -93,6 +93,7 @@ async fn main() -> color_eyre::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(middleware::Compress::default())
             .app_data(web::Data::new(dispatch_addr.clone()))
             .service(actix_files::Files::new("/static", "./static"))
             .service(index)
