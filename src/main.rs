@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use actix::prelude::*;
 use actix_web::{get, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
+use idfm_proxy::objects::LineReference;
 use idfm_proxy::session_actor::{SessionActor, Watching};
 use idfm_proxy::siri_stuff::SiriFetcher;
 use idfm_proxy::templates;
@@ -71,6 +74,23 @@ fn setup_logger() {
         .init();
 }
 
+fn parse_line_referential() -> color_eyre::Result<HashMap<String, LineReference>> {
+    let ref_file = std::fs::File::open("static/data/referentiel-des-lignes.csv")?;
+    let mut rdr = csv::ReaderBuilder::new()
+        .delimiter(b';')
+        .from_reader(ref_file);
+    let mut line_referential = HashMap::new();
+    for result in rdr.deserialize() {
+        let record: LineReference = result?;
+        line_referential.insert(format!("STIF:Line::{}:", record.id).to_string(), record);
+    }
+    tracing::info!(
+        "Parsed line referential with {} lines",
+        line_referential.len()
+    );
+    Ok(line_referential)
+}
+
 #[actix_web::main]
 async fn main() -> color_eyre::Result<()> {
     setup_logger();
@@ -78,6 +98,7 @@ async fn main() -> color_eyre::Result<()> {
     let dispatch_addr = CentralDispatch {
         sessions: Vec::new(),
         pt_data: None,
+        line_referential: Arc::new(parse_line_referential()?),
     }
     .start();
 

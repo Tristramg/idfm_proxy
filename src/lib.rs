@@ -6,4 +6,5 @@ pub mod siri_stuff;
 pub mod templates;
 
 use objects::Line;
+use objects::LineReference;
 use objects::PTData;

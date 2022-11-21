@@ -1,11 +1,16 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use crate::messages::{Connect, DataUpdate};
+use crate::{
+    messages::{Connect, DataUpdate, SiriUpdate},
+    objects::{Line, PTData},
+};
 use actix::prelude::*;
+use siri_lite::service_delivery::EstimatedVehicleJourney;
 
 pub struct CentralDispatch {
     pub sessions: Vec<Recipient<DataUpdate>>,
     pub pt_data: Option<Arc<crate::PTData>>,
+    pub line_referential: Arc<HashMap<String, crate::LineReference>>,
 }
 
 impl Actor for CentralDispatch {
@@ -26,14 +31,46 @@ impl Handler<Connect> for CentralDispatch {
     }
 }
 
-impl Handler<DataUpdate> for CentralDispatch {
+impl Handler<SiriUpdate> for CentralDispatch {
     type Result = ();
 
-    fn handle(&mut self, msg: DataUpdate, _ctx: &mut Self::Context) {
-        tracing::info!("Fresh SIRI data with {} lines", msg.pt_data.lines.len());
-        self.pt_data = Some(msg.pt_data.clone());
+    fn handle(&mut self, msg: SiriUpdate, _ctx: &mut Self::Context) {
+        tracing::info!("Fresh SIRI data with {} vehicle journeys", msg.vjs.len());
+        let pt_data = Arc::new(self.join_siri_and_theorical(msg.vjs));
+        self.pt_data = Some(pt_data.clone());
         for session in &self.sessions {
-            session.do_send(msg.clone());
+            session.do_send(DataUpdate {
+                pt_data: pt_data.clone(),
+            });
         }
     }
 }
+
+impl CentralDispatch {
+    fn join_siri_and_theorical(&mut self, vjs: Vec<EstimatedVehicleJourney>) -> PTData {
+        let mut lines = HashMap::new();
+        for vj in vjs {
+            if let Some(line_reference) = self.line_referential.get(&vj.line_ref.value) {
+                lines
+                    .entry(line_reference.id.clone())
+                    .or_insert_with(|| Line {
+                        reference: line_reference.clone(),
+                        vjs: vec![],
+                    })
+                    .vjs
+                    .push(vj);
+            } else {
+                tracing::warn!(
+                    "Could not find {} line_ref in the static data",
+                    vj.line_ref.value
+                );
+            }
+        }
+
+        PTData { lines }
+    }
+}
+/*
+{
+
+}*/
