@@ -1,7 +1,7 @@
 <div id="messages">
     <ul>
         {% for line in lines.values() %}
-        <li><a href="/lines/{{line.id}}">{{line.mode}} {{line.name}}</a>: {{line.vjs.len()}} Vehicle journeys
+        <li><a href="/lines/{{line.reference.id}}">{{line.reference.mode}} {{line.reference.name}}</a>: {{line.vjs.len()}} Vehicle journeys
             <ul>
                 {% for vj in line.vjs %}
                 {% include "vj_summary.html" %}
