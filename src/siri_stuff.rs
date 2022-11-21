@@ -59,14 +59,12 @@ async fn fetch(uri: String, apikey: String) -> Result<crate::PTData> {
         .map_err(|err| eyre!("Siri: could not extract request body: {err} "))?;
 
     tracing::info!("Got the timetable, starting parsing");
+    save(&response)?;
 
     let mut line_by_id = HashMap::new();
 
     for vj in serde_json::from_str::<SiriResponse>(&response)
-        .map_err(|err| {
-            println!("meh, {response}");
-            handle_unparsable(err, &response)
-        })?
+        .map_err(|err| handle_unparsable(err, &response))?
         .siri
         .service_delivery
         .ok_or(eyre!("Siri: could not find service_delivery"))?
@@ -114,4 +112,15 @@ fn handle_unparsable(err: serde_json::Error, response: &str) -> ErrReport {
         .map_err(|err| eyre!("Could not write failed siri to disk: {err}"))
         .unwrap();
     eyre!("Siri: could not parse json: {err}, see file in {filename}")
+}
+
+fn save(response: &str) -> Result<()> {
+    let filename = format!(
+        "static/data/siri_estimated_timetable_{}.json",
+        chrono::offset::Utc::now().to_rfc3339()
+    );
+    let mut file = std::fs::File::create(&filename)?;
+    file.write(response.as_bytes())?;
+    std::fs::rename(filename, "static/data/idfm_estimated_timetable.latest.json")?;
+    Ok(())
 }
