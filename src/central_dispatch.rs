@@ -1,10 +1,11 @@
-use std::{collections::HashMap, sync::Arc};
 use crate::{
     messages::{Connect, DataUpdate, SiriUpdate, StatusDemand},
-    objects::{Line, PTData}, status::Status,
+    objects::{Line, PTData, VehicleJourney},
+    status::Status,
 };
 use actix::prelude::*;
 use siri_lite::service_delivery::EstimatedVehicleJourney;
+use std::{collections::HashMap, sync::Arc};
 
 pub struct CentralDispatch {
     pub sessions: Vec<Recipient<DataUpdate>>,
@@ -50,8 +51,8 @@ impl Handler<StatusDemand> for CentralDispatch {
 
     fn handle(&mut self, _msg: StatusDemand, _ctx: &mut Self::Context) -> Self::Result {
         Arc::new(Status {
-			nb_open_connections: self.sessions.len()
-		})
+            nb_open_connections: self.sessions.len(),
+        })
     }
 }
 
@@ -67,7 +68,7 @@ impl CentralDispatch {
                         vjs: vec![],
                     })
                     .vjs
-                    .push(vj);
+                    .push(VehicleJourney::from(vj));
             } else {
                 tracing::warn!(
                     "Could not find {} line_ref in the static data",

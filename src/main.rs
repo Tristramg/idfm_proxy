@@ -56,8 +56,6 @@ async fn index() -> impl Responder {
     templates::Index {}
 }
 
-
-
 #[get("/lines/{id}")]
 async fn line(line_ref: web::Path<String>) -> impl Responder {
     templates::LineIndex {

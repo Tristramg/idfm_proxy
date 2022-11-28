@@ -83,4 +83,22 @@ pub mod filters {
     pub fn vj_names(vj: &EstimatedVehicleJourney) -> ::askama::Result<String> {
         askama::filters::join(vj.vehicle_journey_name.iter().map(|d| &d.value), ", ")
     }
+
+    pub fn time(dt: &Option<siri_lite::shared::DateTime>) -> ::askama::Result<String> {
+        if let Some(dt) = dt {
+            Ok(dt.0.format("%H:%M:%S").to_string())
+        } else {
+            Ok(String::new())
+        }
+    }
+
+    pub fn or<T: std::fmt::Display, U: std::fmt::Display>(
+        val: &Option<T>,
+        default: U,
+    ) -> ::askama::Result<String> {
+        Ok(val
+            .as_ref()
+            .map(|val| val.to_string())
+            .unwrap_or(default.to_string()))
+    }
 }
