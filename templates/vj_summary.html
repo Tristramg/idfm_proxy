@@ -1,15 +1,8 @@
-<li>
-    Route: {{vj|route}},
-    Direction: {{vj|direction}},
-    Origin: {{vj|origin}},
-    Destination {{vj.destination_ref.value}},
-    Destinations: {{vj|destinations}},
-    Directions: {{vj|direction_names}},
-    Origins: {{vj|origins}},
-    Published line name: {{vj|published_line_name}}
-    Operator: {{vj.operator_ref.value}}
-    First or last journey: {{vj.first_or_last_journey}}
-    Journey note : {{vj|journey_note}}
-    Vehicle mode: {{vj.vehicle_mode|join(", ")}}
-    Vj names: {{vj|vj_names}}
+<li> De <em>{{vj.origin}}</em> vers <em>{{vj.destination}}</em>
+    <ul>
+     {% for estimated_call in vj.estimated_calls %}
+        <li>{{ estimated_call|safe }}</li>
+    {% endfor %}
+
+    </ul>
 </li>

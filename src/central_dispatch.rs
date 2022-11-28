@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     messages::{Connect, DataUpdate, SiriUpdate},
-    objects::{Line, PTData},
+    objects::{Line, PTData, VehicleJourney},
 };
 use actix::prelude::*;
 use siri_lite::service_delivery::EstimatedVehicleJourney;
@@ -58,7 +58,7 @@ impl CentralDispatch {
                         vjs: vec![],
                     })
                     .vjs
-                    .push(vj);
+                    .push(VehicleJourney::from(vj));
             } else {
                 tracing::warn!(
                     "Could not find {} line_ref in the static data",

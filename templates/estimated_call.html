@@ -1,0 +1,30 @@
+{% match self.arrival_status() %}
+    {% when CallStatus::None %}
+        None
+    {% when CallStatus::OnTime with (t)%}
+        On time {{t|time}}
+    {% when CallStatus::Delayed with (expected, aimed)%}
+        <strike>{{expected|time}}</strike>{{aimed|time}}
+{% endmatch %}
+{#
+{% if expected_arrival_time.is_some() %}
+    {% if aimed_arrival_time.is_none() %}
+        {{ expected_arrival_time|time }}
+    {% else if aimed_arrival_time.is_some() %}
+        {{ if aimed_arrival_time == expected_arrival_time }}
+        <strike>{{ expected_arrival_time|time }}</strike> {{aimed_arrival_time|time}}
+    {% endif %}
+{% else %}
+    {{aimed_arrival_time|time}}
+{% endif %}
+
+
+{% if expected_departure_time.is_some() && aimed_departure_time.is_none() %}
+    {{ expected_departure_time|time }}
+{% elsif expected_departure_time.is_some() && aimed_departure_time.is_some() %}
+    <strike>{{ expected_departure_time|time }}</strike> {{aimed_departure_time|time}}
+{% elsif aimed_departure_time.is_some() %}
+    {{aimed_departure_time|time}}
+{% endif %}
+
+#}
