@@ -1,8 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
-
 use crate::{
-    messages::{Connect, DataUpdate, SiriUpdate},
-    objects::{Line, PTData},
+    messages::{Connect, DataUpdate, SiriUpdate, StatusDemand},
+    objects::{Line, PTData}, status::Status,
 };
 use actix::prelude::*;
 use siri_lite::service_delivery::EstimatedVehicleJourney;
@@ -46,6 +45,16 @@ impl Handler<SiriUpdate> for CentralDispatch {
     }
 }
 
+impl Handler<StatusDemand> for CentralDispatch {
+    type Result = Arc<Status>;
+
+    fn handle(&mut self, _msg: StatusDemand, _ctx: &mut Self::Context) -> Self::Result {
+        Arc::new(Status {
+			nb_open_connections: self.sessions.len()
+		})
+    }
+}
+
 impl CentralDispatch {
     fn join_siri_and_theorical(&mut self, vjs: Vec<EstimatedVehicleJourney>) -> PTData {
         let mut lines = HashMap::new();
@@ -70,7 +79,3 @@ impl CentralDispatch {
         PTData { lines }
     }
 }
-/*
-{
-
-}*/
