@@ -10,6 +10,7 @@ use idfm_proxy::central_dispatch::CentralDispatch;
 use idfm_proxy::objects::LineReference;
 use idfm_proxy::session_actor::{SessionActor, Watching};
 use idfm_proxy::siri_stuff::SiriFetcher;
+use idfm_proxy::status::status;
 use idfm_proxy::templates;
 use tracing_subscriber::{filter::targets::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -54,6 +55,8 @@ async fn line_websocket(
 async fn index() -> impl Responder {
     templates::Index {}
 }
+
+
 
 #[get("/lines/{id}")]
 async fn line(line_ref: web::Path<String>) -> impl Responder {
@@ -119,6 +122,7 @@ async fn main() -> color_eyre::Result<()> {
             .service(actix_files::Files::new("/static", "./static"))
             .service(index)
             .service(line)
+            .service(status)
             .service(websocket)
             .service(line_websocket)
     })
