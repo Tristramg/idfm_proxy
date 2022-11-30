@@ -1,8 +1,8 @@
 <div id="line">
-    <h2>{{line.reference.mode}} {{line.reference.name}}</h2>
+    <h2>{{reference}} {{reference}}</h2>
 
     <ul>
-        {% for vj in line.vjs %}
+        {% for vj in vjs %}
         {% include "vj_summary.html" %}
         {% endfor %}
     </ul>

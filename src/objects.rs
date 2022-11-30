@@ -1,41 +1,41 @@
 use itertools::Itertools;
-use std::collections::HashMap;
-
-use askama_actix::Template;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use siri_lite::{service_delivery::EstimatedVehicleJourney, shared::DateTime};
+use std::collections::HashMap;
 
 pub struct PTData {
     pub lines: HashMap<String, Line>,
 }
 
+#[derive(Serialize)]
 pub struct Line {
     pub reference: LineReference,
     pub vjs: Vec<VehicleJourney>,
 }
 
 // Struct to deserialize the data from https://data.iledefrance-mobilites.fr/explore/dataset/referentiel-des-lignes
-#[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all(deserialize = "PascalCase"))]
 pub struct LineReference {
-    #[serde(rename = "ID_Line")]
+    #[serde(rename(deserialize = "ID_Line"))]
     pub id: String,
-    #[serde(rename = "Name_Line")]
+    #[serde(rename(deserialize = "Name_Line"))]
     pub name: String,
-    #[serde(rename = "ShortName_Line")]
+    #[serde(rename(deserialize = "ShortName_Line"))]
     pub short_name: String,
-    #[serde(rename = "TransportMode")]
+    #[serde(rename(deserialize = "TransportMode"))]
     pub mode: String,
-    #[serde(rename = "TransportSubmode")]
+    #[serde(rename(deserialize = "TransportSubmode"))]
     pub sub_mode: String,
     pub operator_name: String,
     pub network_name: String,
-    #[serde(rename = "ColourWeb_hexa")]
+    #[serde(rename(deserialize = "ColourWeb_hexa"))]
     pub background_color: String,
-    #[serde(rename = "TextColourWeb_hexa")]
+    #[serde(rename(deserialize = "TextColourWeb_hexa"))]
     pub text_color: String,
 }
 
+#[derive(Serialize)]
 pub struct VehicleJourney {
     pub origin: String,
     pub destination: String,
@@ -66,8 +66,8 @@ pub enum CallStatus<'a> {
     OnTime(&'a DateTime),
     Delayed(&'a DateTime, &'a DateTime),
 }
-#[derive(Template)]
-#[template(path = "estimated_call.html")]
+
+#[derive(Serialize)]
 pub struct EstimatedCall {
     pub expected_arrival_time: Option<DateTime>,
     pub aimed_arrival_time: Option<DateTime>,
@@ -100,11 +100,5 @@ impl From<&siri_lite::service_delivery::EstimatedCall> for EstimatedCall {
             expected_departure_time: siri_estimated_call.expected_departure_time.clone(),
             aimed_departure_time: siri_estimated_call.aimed_departure_time.clone(),
         }
-    }
-}
-
-pub mod filters {
-    pub fn time(dt: &siri_lite::shared::DateTime) -> ::askama::Result<String> {
-        Ok(dt.0.format("%H:%M:%S").to_string())
     }
 }

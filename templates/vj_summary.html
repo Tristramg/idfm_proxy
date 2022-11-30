@@ -1,8 +1,16 @@
 <li> De <em>{{vj.origin}}</em> vers <em>{{vj.destination}}</em>
-    <ul>
-     {% for estimated_call in vj.estimated_calls %}
-        <li>{{ estimated_call|safe }}</li>
-    {% endfor %}
+    <div class="vj-detail__container">
+        {% for c in vj.estimated_calls %}
+            <div class="vj-detail__call">
+                {% if c.aimed_arrival_time is defined %}
+                    {% if c.expected_arrival_time is defined %}
+                        <div class="vj-detail__delayed">{{c.aimed_arrival_time}}</div>
+                        <div>{{c.expected_arrival_time}}</div>
+                    {% endif %}
+                {% endif %}
 
-    </ul>
+            </div>
+            {% endfor %}
+        </ul>
+    </div>
 </li>

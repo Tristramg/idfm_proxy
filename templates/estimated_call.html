@@ -1,11 +1,4 @@
-{% match self.arrival_status() %}
-    {% when CallStatus::None %}
-        None
-    {% when CallStatus::OnTime with (t)%}
-        On time {{t|time}}
-    {% when CallStatus::Delayed with (expected, aimed)%}
-        <strike>{{expected|time}}</strike>{{aimed|time}}
-{% endmatch %}
+
 {#
 {% if expected_arrival_time.is_some() %}
     {% if aimed_arrival_time.is_none() %}

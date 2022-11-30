@@ -53,14 +53,20 @@ async fn line_websocket(
 
 #[get("/")]
 async fn index() -> impl Responder {
-    templates::Index {}
+    let s = templates::TEMPLATES
+        .render("index.html", &tera::Context::new())
+        .unwrap();
+    HttpResponse::Ok().content_type("text/html").body(s)
 }
 
 #[get("/lines/{id}")]
 async fn line(line_ref: web::Path<String>) -> impl Responder {
-    templates::LineIndex {
-        line_ref: line_ref.to_string(),
-    }
+    let mut context = tera::Context::new();
+    context.insert("line_ref", &line_ref.as_str());
+    let s = templates::TEMPLATES
+        .render("line_index.html", &context)
+        .unwrap();
+    HttpResponse::Ok().content_type("text/html").body(s)
 }
 
 fn setup_logger() {
@@ -102,6 +108,31 @@ async fn main() -> color_eyre::Result<()> {
         line_referential: Arc::new(parse_line_referential()?),
     }
     .start();
+
+    let old_data = std::fs::read_to_string("static/data/idfm_estimated_timetable.latest.json")
+        .map_err(|_| format_err!("casting err"))
+        .and_then(|json| {
+            serde_json::from_str::<siri_lite::siri::SiriResponse>(&json)
+                .map_err(|_| format_err!("casting err"))
+        });
+
+    if let Ok(old_data) = old_data {
+        let vjs = old_data
+            .siri
+            .service_delivery
+            .ok_or(format_err!("Siri: could not find service_delivery"))?
+            .estimated_timetable_delivery
+            .into_iter()
+            .flat_map(|delivery| {
+                delivery
+                    .estimated_journey_version_frame
+                    .into_iter()
+                    .flat_map(|frame| frame.estimated_vehicle_journey)
+            })
+            .collect();
+        dispatch_addr.do_send(SiriUpdate { vjs });
+        tracing::info!("Re-using old data");
+    }
 
     let _siri_fetcher = SiriFetcher {
         apikey: std::env::var("API_KEY")

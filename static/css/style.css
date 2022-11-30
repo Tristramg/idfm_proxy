@@ -1,3 +1,12 @@
 .common__container {
     padding-top: 2rem;
 }
+
+.vj-detail__container {
+    display: grid;
+}
+
+.vj-detail__delayed {
+    text-decoration: line-through;
+}
+
