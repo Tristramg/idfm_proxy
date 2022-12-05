@@ -1,3 +1,4 @@
+use crate::messages::*;
 use crate::{
     messages::{Connect, DataUpdate, SiriUpdate, StatusDemand},
     objects::{Line, PTData, VehicleJourney},
@@ -11,6 +12,7 @@ pub struct CentralDispatch {
     pub sessions: Vec<Recipient<DataUpdate>>,
     pub pt_data: Option<Arc<crate::PTData>>,
     pub line_referential: Arc<HashMap<String, crate::LineReference>>,
+    pub gtfs: Option<Arc<gtfs_structures::Gtfs>>,
 }
 
 impl Actor for CentralDispatch {
@@ -53,6 +55,22 @@ impl Handler<StatusDemand> for CentralDispatch {
         Arc::new(Status {
             nb_open_connections: self.sessions.len(),
         })
+    }
+}
+
+impl Handler<GtfsUpdate> for CentralDispatch {
+    type Result = ();
+
+    fn handle(&mut self, msg: GtfsUpdate, _ctx: &mut Self::Context) {
+        tracing::info!("Fresh Gtfs data with {} stops", msg.gtfs.stops.len());
+        self.gtfs = Some(Arc::new(msg.gtfs));
+    }
+}
+
+impl Handler<GetGtfs> for CentralDispatch {
+    type Result = Option<Arc<gtfs_structures::Gtfs>>;
+    fn handle(&mut self, _msg: GetGtfs, _ctx: &mut Self::Context) -> Self::Result {
+        self.gtfs.clone()
     }
 }
 

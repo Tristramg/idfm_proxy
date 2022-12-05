@@ -7,6 +7,8 @@ use actix_web::{get, middleware, web, App, HttpRequest, HttpResponse, HttpServer
 use actix_web_actors::ws;
 use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
+use idfm_proxy::gtfs_fetcher::GtfsFetcher;
+use idfm_proxy::messages::SiriUpdate;
 use idfm_proxy::objects::LineReference;
 use idfm_proxy::session_actor::{SessionActor, Watching};
 use idfm_proxy::siri_stuff::SiriFetcher;
@@ -106,6 +108,7 @@ async fn main() -> color_eyre::Result<()> {
         sessions: Vec::new(),
         pt_data: None,
         line_referential: Arc::new(parse_line_referential()?),
+        gtfs: None,
     }
     .start();
 
@@ -140,6 +143,11 @@ async fn main() -> color_eyre::Result<()> {
             .expect("Missing API_KEY environment variable")
             .to_string(),
         uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
+        dispatch: dispatch_addr.clone(),
+    }
+    .start();
+
+    let _gtfs_fetch = GtfsFetcher {
         dispatch: dispatch_addr.clone(),
     }
     .start();
