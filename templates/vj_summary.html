@@ -1,15 +1,35 @@
-<li>
-    Route: {{vj|route}},
-    Direction: {{vj|direction}},
-    Origin: {{vj|origin}},
-    Destination {{vj.destination_ref.value}},
-    Destinations: {{vj|destinations}},
-    Directions: {{vj|direction_names}},
-    Origins: {{vj|origins}},
-    Published line name: {{vj|published_line_name}}
-    Operator: {{vj.operator_ref.value}}
-    First or last journey: {{vj.first_or_last_journey}}
-    Journey note : {{vj|journey_note}}
-    Vehicle mode: {{vj.vehicle_mode|join(", ")}}
-    Vj names: {{vj|vj_names}}
+<li>En direction de <em>{{vj.destination}}</em>
+    <div class="vj-detail__container">
+        {% for c in vj.estimated_calls %}
+            <div class="vj-detail__call vj-detail__call__departure">
+                {% if c.aimed_arrival_time != "" %}
+                    {% if c.expected_arrival_time != "" and c.aimed_arrival_time != c.expected_arrival_time %}
+                        <div class="vj-detail__call--delayed">{{c.aimed_arrival_time | to_paris_time }}
+                        </div>
+                        <div class="vj-detail__call--updated">{{c.expected_arrival_time | to_paris_time }}</div>
+                    {% else %}
+                        <div class="vj-detail__call--unknown">{{c.aimed_arrival_time | to_paris_time }}</div>
+                    {% endif %}
+                {% elif c.expected_arrival_time != "" %}
+                    <div class="vj-detail__call--unknown">{{c.expected_arrival_time | to_paris_time }}</div>
+                {% endif %}
+            </div>
+            <div class="vj-detail__call__thermometer">•</div>
+            <div class="vj-detail__call vj-detail__cal__">
+                {% if c.aimed_departure_time != "" %}
+                    {% if c.expected_departure_time != "" and c.aimed_departure_time != c.expected_departure_time %}
+                        <div class="vj-detail__call--delayed">{{c.aimed_departure_time | to_paris_time }}</div>
+                        <div class="vj-detail__call--updated">{{c.expected_departure_time | to_paris_time }}</div>
+                    {% else %}
+                        <div class="vj-detail__call--unknown">{{c.aimed_departure_time | to_paris_time }}</div>
+                    {% endif %}
+                {% elif c.expected_departure_time != "" %}
+                    <div class="vj-detail__call--unknown">{{c.expected_departure_time | to_paris_time }}</div>
+                {% endif %}
+            </div>
+            <div class="vj-detail__call__station">
+                {{c.stop_name}}
+            </div>
+        {% endfor %}
+    </div>
 </li>

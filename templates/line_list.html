@@ -1,13 +1,13 @@
 <div id="messages">
     <ul>
-        {% for line in lines.values() %}
-        <li><a href="/lines/{{line.reference.id}}">{{line.reference.mode}} {{line.reference.name}}</a>: {{line.vjs.len()}} Vehicle journeys
-            <ul>
-                {% for vj in line.vjs %}
-                {% include "vj_summary.html" %}
-                {% endfor %}
-            </ul>
+    {% for ref, line in lines %}
+        <li>
+            <a href="/lines/{{line.reference.id}}">{{line.reference.mode|capitalize }} {{line.reference.name}}</a>
+            {% if line.reference.network_name != "" %} du réseau {{line.reference.network_name}}, {% endif %}
+            opéré par {{line.reference.operator_name}}
+            ({{line.vjs | length}} circulations connues)
         </li>
-        {% endfor %}
+    {% endfor %}
     </ul>
+
 </div>

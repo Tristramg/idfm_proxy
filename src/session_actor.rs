@@ -1,8 +1,8 @@
 use crate::central_dispatch::CentralDispatch;
 use crate::messages::{Connect, DataUpdate};
+use crate::templates::TEMPLATES;
 use actix::prelude::*;
 use actix_web_actors::ws;
-use askama::Template;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
     pub watching: Watching,
@@ -38,19 +38,27 @@ impl Handler<DataUpdate> for SessionActor {
                 let template = crate::templates::Lines {
                     lines: &msg.pt_data.lines,
                 };
-                ctx.text(template.render().unwrap())
+                let text = TEMPLATES
+                    .render(
+                        "line_list.html",
+                        &tera::Context::from_serialize(&template).unwrap(),
+                    )
+                    .unwrap();
+                ctx.text(text)
             }
             Watching::Line(ref line_ref) => {
                 let l = msg.pt_data.lines.get(line_ref);
                 if let Some(line) = l {
-                    let line_template = crate::templates::Line { line };
-                    ctx.text(line_template.render().unwrap())
+                    let text = TEMPLATES
+                        .render("line.html", &tera::Context::from_serialize(&line).unwrap())
+                        .unwrap();
+                    ctx.text(text)
                 } else {
                     // 404
-                    let line_not_found_template = crate::templates::LineNotFound {
-                        line_ref: line_ref.as_str(),
-                    };
-                    ctx.text(line_not_found_template.render().unwrap())
+                    let mut context = tera::Context::new();
+                    context.insert("line_ref", &line_ref.as_str());
+                    let text = TEMPLATES.render("line_not_found.html", &context).unwrap();
+                    ctx.text(text)
                 }
             }
             Watching::Point(_) => unimplemented!("point not implemented"),
