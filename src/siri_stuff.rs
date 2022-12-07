@@ -57,7 +57,6 @@ async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourne
         .map_err(|err| eyre!("Siri: could not extract request body: {err} "))?;
 
     tracing::info!("Got the timetable, starting parsing");
-    save(&response)?;
 
     let vjs = serde_json::from_str::<SiriResponse>(&response)
         .map_err(|err| handle_unparsable(err, &response))?
@@ -74,6 +73,7 @@ async fn fetch(uri: String, apikey: String) -> Result<Vec<EstimatedVehicleJourne
         })
         .collect();
 
+    save(&response)?;
     Ok(vjs)
 }
 

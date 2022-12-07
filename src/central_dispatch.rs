@@ -1,4 +1,3 @@
-use crate::messages::*;
 use crate::{
     messages::{Connect, DataUpdate, SiriUpdate, StatusDemand},
     objects::{Line, PTData, VehicleJourney},
@@ -12,7 +11,7 @@ pub struct CentralDispatch {
     pub sessions: Vec<Recipient<DataUpdate>>,
     pub pt_data: Option<Arc<crate::PTData>>,
     pub line_referential: Arc<HashMap<String, crate::LineReference>>,
-    pub gtfs: Option<Arc<gtfs_structures::Gtfs>>,
+    pub stop_referential: Arc<HashMap<String, crate::StopReference>>,
 }
 
 impl Actor for CentralDispatch {
@@ -58,22 +57,6 @@ impl Handler<StatusDemand> for CentralDispatch {
     }
 }
 
-impl Handler<GtfsUpdate> for CentralDispatch {
-    type Result = ();
-
-    fn handle(&mut self, msg: GtfsUpdate, _ctx: &mut Self::Context) {
-        tracing::info!("Fresh Gtfs data with {} stops", msg.gtfs.stops.len());
-        self.gtfs = Some(Arc::new(msg.gtfs));
-    }
-}
-
-impl Handler<GetGtfs> for CentralDispatch {
-    type Result = Option<Arc<gtfs_structures::Gtfs>>;
-    fn handle(&mut self, _msg: GetGtfs, _ctx: &mut Self::Context) -> Self::Result {
-        self.gtfs.clone()
-    }
-}
-
 impl CentralDispatch {
     fn join_siri_and_theorical(&mut self, vjs: Vec<EstimatedVehicleJourney>) -> PTData {
         let mut lines = HashMap::new();
@@ -86,7 +69,7 @@ impl CentralDispatch {
                         vjs: vec![],
                     })
                     .vjs
-                    .push(VehicleJourney::from(vj));
+                    .push(VehicleJourney::from(vj).patch_name(&self.stop_referential));
             } else {
                 tracing::warn!(
                     "Could not find {} line_ref in the static data",

@@ -9,7 +9,7 @@ use color_eyre::{eyre::format_err, Result};
 use idfm_proxy::central_dispatch::CentralDispatch;
 use idfm_proxy::gtfs_fetcher::GtfsFetcher;
 use idfm_proxy::messages::SiriUpdate;
-use idfm_proxy::objects::LineReference;
+use idfm_proxy::objects::{LineReference, StopReference};
 use idfm_proxy::session_actor::{SessionActor, Watching};
 use idfm_proxy::siri_stuff::SiriFetcher;
 use idfm_proxy::status::status;
@@ -100,6 +100,26 @@ fn parse_line_referential() -> color_eyre::Result<HashMap<String, LineReference>
     Ok(line_referential)
 }
 
+fn parse_stop_referential() -> color_eyre::Result<HashMap<String, StopReference>> {
+    let ref_file = std::fs::File::open("static/data/arrets.csv")?;
+    let mut rdr = csv::ReaderBuilder::new()
+        .delimiter(b';')
+        .from_reader(ref_file);
+    let mut stop_referential = HashMap::new();
+    for result in rdr.deserialize() {
+        let record: StopReference = result?;
+        stop_referential.insert(
+            format!("STIF:StopPoint:Q:{}:", record.id).to_string(),
+            record,
+        );
+    }
+    tracing::info!(
+        "Parsed stop referential with {} stops",
+        stop_referential.len()
+    );
+    Ok(stop_referential)
+}
+
 #[actix_web::main]
 async fn main() -> color_eyre::Result<()> {
     setup_logger();
@@ -108,7 +128,7 @@ async fn main() -> color_eyre::Result<()> {
         sessions: Vec::new(),
         pt_data: None,
         line_referential: Arc::new(parse_line_referential()?),
-        gtfs: None,
+        stop_referential: Arc::new(parse_stop_referential()?),
     }
     .start();
 

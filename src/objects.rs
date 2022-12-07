@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use siri_lite::{service_delivery::EstimatedVehicleJourney, shared::DateTime};
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap, sync::Arc};
 
 pub struct PTData {
     pub lines: HashMap<String, Line>,
@@ -35,6 +35,15 @@ pub struct LineReference {
     pub text_color: String,
 }
 
+// Struct to deserialize the data from https://prim.iledefrance-mobilites.fr/fr/donnees-statiques/arrets
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StopReference {
+    #[serde(rename(deserialize = "ArRId"))]
+    pub id: String,
+    #[serde(rename(deserialize = "ArRName"))]
+    pub name: String,
+}
+
 #[derive(Serialize)]
 pub struct VehicleJourney {
     pub origin: String,
@@ -56,15 +65,19 @@ impl From<EstimatedVehicleJourney> for VehicleJourney {
                 .estimated_call
                 .iter()
                 .map(|e| EstimatedCall::from(e))
+                .sorted()
                 .collect(),
         }
     }
 }
 
-pub enum CallStatus<'a> {
-    None,
-    OnTime(&'a DateTime),
-    Delayed(&'a DateTime, &'a DateTime),
+impl VehicleJourney {
+    pub fn patch_name(mut self, stops: &Arc<HashMap<String, crate::StopReference>>) -> Self {
+        for call in &mut self.estimated_calls {
+            call.patch_name(stops)
+        }
+        self
+    }
 }
 
 #[derive(Serialize)]
@@ -73,23 +86,8 @@ pub struct EstimatedCall {
     pub aimed_arrival_time: Option<DateTime>,
     pub expected_departure_time: Option<DateTime>,
     pub aimed_departure_time: Option<DateTime>,
-}
-
-impl EstimatedCall {
-    pub fn arrival_status(&self) -> CallStatus {
-        match (&self.expected_departure_time, &self.aimed_arrival_time) {
-            (None, None) => CallStatus::None,
-            (Some(expected), None) => CallStatus::OnTime(expected),
-            (None, Some(aimed)) => CallStatus::OnTime(aimed),
-            (Some(expected), Some(aimed)) => {
-                if expected == aimed {
-                    CallStatus::OnTime(expected)
-                } else {
-                    CallStatus::Delayed(aimed, expected)
-                }
-            }
-        }
-    }
+    pub stop_point_ref: String,
+    pub stop_name: Option<String>,
 }
 
 impl From<&siri_lite::service_delivery::EstimatedCall> for EstimatedCall {
@@ -99,6 +97,57 @@ impl From<&siri_lite::service_delivery::EstimatedCall> for EstimatedCall {
             aimed_arrival_time: siri_estimated_call.aimed_arrival_time.clone(),
             expected_departure_time: siri_estimated_call.expected_departure_time.clone(),
             aimed_departure_time: siri_estimated_call.aimed_departure_time.clone(),
+            stop_point_ref: siri_estimated_call.stop_point_ref.value.clone(),
+            stop_name: None,
         }
     }
 }
+
+impl EstimatedCall {
+    pub fn patch_name(&mut self, stops: &Arc<HashMap<String, crate::StopReference>>) {
+        // Sometimes, instead of Q, there is BP, but works the same
+        // Source : idfm slack
+        let stop_id = &self
+            .stop_point_ref
+            .replace("STIF:StopPoint:BP:", "STIF:StopPoint:Q:");
+        if let Some(stop) = stops.get(stop_id) {
+            self.stop_name = Some(stop.name.clone());
+        } else {
+            tracing::info!(
+                "Could not find stop_point_ref {} in stops reference",
+                self.stop_point_ref
+            )
+        }
+    }
+
+    pub fn reference_time(&self) -> Option<DateTime> {
+        self.aimed_arrival_time
+            .clone()
+            .or(self.aimed_departure_time.clone())
+            .or(self.expected_arrival_time.clone())
+            .or(self.expected_departure_time.clone())
+    }
+}
+
+impl Ord for EstimatedCall {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self.reference_time(), other.reference_time()) {
+            (Some(a), Some(b)) => a.0.cmp(&b.0),
+            _ => Ordering::Equal,
+        }
+    }
+}
+
+impl PartialOrd for EstimatedCall {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for EstimatedCall {
+    fn eq(&self, other: &Self) -> bool {
+        self.reference_time() == other.reference_time()
+    }
+}
+
+impl Eq for EstimatedCall {}

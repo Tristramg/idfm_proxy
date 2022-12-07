@@ -1,4 +1,4 @@
-use crate::{central_dispatch::CentralDispatch, messages::GtfsUpdate};
+use crate::central_dispatch::CentralDispatch;
 use actix::prelude::*;
 use color_eyre::eyre::Result;
 use gtfs_structures::Gtfs;
@@ -28,8 +28,8 @@ impl GtfsFetcher {
     fn update_gtfs(&mut self, ctx: &mut Context<Self>) {
         fetch()
             .into_actor(self)
-            .map(|r, act, _ctx| match r {
-                Ok(gtfs) => act.dispatch.do_send(GtfsUpdate { gtfs }),
+            .map(|r, _act, _ctx| match r {
+                Ok(gtfs) => tracing::info!("Got gtfs with {} stops", gtfs.stops.len()),
                 Err(e) => tracing::info!(" {e}"),
             })
             .wait(ctx);

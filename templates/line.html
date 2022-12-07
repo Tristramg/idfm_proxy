@@ -1,9 +1,10 @@
 <div id="line">
-    <h2>{{reference}} {{reference}}</h2>
+    <h2>{{reference.mode|capitalize }} {{reference.name}}</a>
+        {% if reference.network_name != "" %} du réseau {{reference.network_name}}, {% endif %}</h2>
 
     <ul>
         {% for vj in vjs %}
-        {% include "vj_summary.html" %}
+            {% include "vj_summary.html" %}
         {% endfor %}
     </ul>
 </div>

@@ -1,11 +1,23 @@
-use std::collections::HashMap;
-
 use serde::Serialize;
-use tera::Tera;
+use serde_json::Value;
+use std::collections::HashMap;
+use tera::*;
 
 #[derive(Serialize)]
 pub struct Lines<'a> {
     pub lines: &'a HashMap<String, crate::Line>,
+}
+
+fn to_paris_time(date: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+    match date.as_str() {
+        Some(date) => {
+            let dt = chrono::DateTime::parse_from_rfc3339(&date.to_string())
+                .map_err(|e| Error::msg(format!("could not parse date {date}: {e}")))?;
+            let paris_time = dt.with_timezone(&chrono_tz::Europe::Paris);
+            Ok(Value::String(paris_time.format("%H:%M:%S").to_string()))
+        }
+        _ => Ok(Value::Null),
+    }
 }
 
 lazy_static::lazy_static! {
@@ -17,7 +29,7 @@ lazy_static::lazy_static! {
                 ::std::process::exit(1);
             }
         };
-        tera.full_reload().expect("unable to full reload templates");
+        tera.register_filter("to_paris_time", &to_paris_time);
         tera
     };
 }

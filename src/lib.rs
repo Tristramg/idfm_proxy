@@ -7,6 +7,4 @@ pub mod siri_stuff;
 pub mod templates;
 pub mod status;
 
-use objects::Line;
-use objects::LineReference;
-use objects::PTData;
+use objects::*;
