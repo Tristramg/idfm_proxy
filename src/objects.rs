@@ -121,11 +121,11 @@ impl EstimatedCall {
     }
 
     pub fn reference_time(&self) -> Option<DateTime> {
-        self.aimed_arrival_time
+        self.expected_arrival_time
             .clone()
-            .or(self.aimed_departure_time.clone())
-            .or(self.expected_arrival_time.clone())
             .or(self.expected_departure_time.clone())
+            .or(self.aimed_arrival_time.clone())
+            .or(self.aimed_departure_time.clone())
     }
 }
 

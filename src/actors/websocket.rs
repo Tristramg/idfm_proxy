@@ -1,4 +1,4 @@
-use crate::central_dispatch::CentralDispatch;
+use crate::actors::CentralDispatch;
 use crate::messages::{Connect, DataUpdate};
 use crate::templates::TEMPLATES;
 use actix::prelude::*;

@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 
 pub struct CentralDispatch {
     pub sessions: Vec<Recipient<DataUpdate>>,
-    pub pt_data: Option<Arc<crate::PTData>>,
+    pub pt_data: Option<Arc<PTData>>,
     pub line_referential: Arc<HashMap<String, crate::LineReference>>,
     pub stop_referential: Arc<HashMap<String, crate::StopReference>>,
 }

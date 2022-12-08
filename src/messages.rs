@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
+use crate::status::Status;
 use actix::prelude::*;
 use siri_lite::service_delivery::EstimatedVehicleJourney;
-use crate::status::Status;
-
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -30,10 +29,9 @@ pub struct GetGtfs {}
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
 pub struct DataUpdate {
-    pub pt_data: Arc<crate::PTData>,
+    pub pt_data: Arc<crate::objects::PTData>,
 }
 
 #[derive(Message, Clone)]
 #[rtype(result = "Arc<Status>")]
-pub struct StatusDemand {
-}
+pub struct StatusDemand {}

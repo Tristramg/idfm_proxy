@@ -5,7 +5,7 @@ use tera::*;
 
 #[derive(Serialize)]
 pub struct Lines<'a> {
-    pub lines: &'a HashMap<String, crate::Line>,
+    pub lines: &'a HashMap<String, crate::objects::Line>,
 }
 
 fn to_paris_time(date: &Value, _: &HashMap<String, Value>) -> Result<Value> {

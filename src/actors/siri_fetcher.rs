@@ -1,4 +1,5 @@
-use crate::{central_dispatch::CentralDispatch, messages::SiriUpdate};
+use super::CentralDispatch;
+use crate::messages::SiriUpdate;
 use actix::prelude::*;
 use color_eyre::eyre::{eyre, ErrReport, Result};
 use siri_lite::{service_delivery::EstimatedVehicleJourney, siri::SiriResponse};
