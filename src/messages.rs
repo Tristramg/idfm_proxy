@@ -22,10 +22,6 @@ pub struct GtfsUpdate {
     pub gtfs: gtfs_structures::Gtfs,
 }
 
-#[derive(Message)]
-#[rtype(result = "Option<Arc<gtfs_structures::Gtfs>>")]
-pub struct GetGtfs {}
-
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
 pub struct DataUpdate {
