@@ -11,7 +11,6 @@ pub struct SessionActor {
 pub enum Watching {
     Index,
     Line(String),
-    Point(String),
 }
 
 impl Actor for SessionActor {
@@ -50,7 +49,7 @@ impl Handler<DataUpdate> for SessionActor {
                 let l = msg.pt_data.lines.get(line_ref);
                 if let Some(line) = l {
                     let text = TEMPLATES
-                        .render("line.html", &tera::Context::from_serialize(&line).unwrap())
+                        .render("line.html", &tera::Context::from_serialize(line).unwrap())
                         .unwrap();
                     ctx.text(text)
                 } else {
@@ -61,7 +60,6 @@ impl Handler<DataUpdate> for SessionActor {
                     ctx.text(text)
                 }
             }
-            Watching::Point(_) => unimplemented!("point not implemented"),
         }
     }
 }
