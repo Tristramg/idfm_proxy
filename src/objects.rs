@@ -64,7 +64,7 @@ impl From<EstimatedVehicleJourney> for VehicleJourney {
                 .estimated_calls
                 .estimated_call
                 .iter()
-                .map(|e| EstimatedCall::from(e))
+                .map(EstimatedCall::from)
                 .sorted()
                 .collect(),
         }
@@ -121,11 +121,11 @@ impl EstimatedCall {
     }
 
     pub fn reference_time(&self) -> Option<DateTime> {
-        self.aimed_arrival_time
+        self.expected_arrival_time
             .clone()
-            .or(self.aimed_departure_time.clone())
-            .or(self.expected_arrival_time.clone())
-            .or(self.expected_departure_time.clone())
+            .or_else(|| self.expected_departure_time.clone())
+            .or_else(|| self.aimed_arrival_time.clone())
+            .or_else(|| self.aimed_departure_time.clone())
     }
 }
 

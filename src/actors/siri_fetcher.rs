@@ -1,4 +1,5 @@
-use crate::{central_dispatch::CentralDispatch, messages::SiriUpdate};
+use super::CentralDispatch;
+use crate::messages::SiriUpdate;
 use actix::prelude::*;
 use color_eyre::eyre::{eyre, ErrReport, Result};
 use siri_lite::{service_delivery::EstimatedVehicleJourney, siri::SiriResponse};
@@ -85,7 +86,7 @@ fn handle_unparsable(err: serde_json::Error, response: &str) -> ErrReport {
     let mut file = std::fs::File::create(&filename)
         .map_err(|err| eyre!("Could not create file for failed siri: {err}"))
         .unwrap();
-    file.write(response.as_bytes())
+    file.write_all(response.as_bytes())
         .map_err(|err| eyre!("Could not write failed siri to disk: {err}"))
         .unwrap();
     eyre!("Siri: could not parse json: {err}, see file in {filename}")
@@ -97,7 +98,7 @@ fn save(response: &str) -> Result<()> {
         chrono::offset::Utc::now().to_rfc3339()
     );
     let mut file = std::fs::File::create(&filename)?;
-    file.write(response.as_bytes())?;
+    file.write_all(response.as_bytes())?;
     std::fs::rename(filename, "static/data/idfm_estimated_timetable.latest.json")?;
     Ok(())
 }

@@ -3,73 +3,19 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use actix::prelude::*;
-use actix_web::{get, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use actix_web_actors::ws;
-use color_eyre::{eyre::format_err, Result};
-use idfm_proxy::central_dispatch::CentralDispatch;
-use idfm_proxy::gtfs_fetcher::GtfsFetcher;
-use idfm_proxy::messages::SiriUpdate;
-use idfm_proxy::objects::{LineReference, StopReference};
-use idfm_proxy::session_actor::{SessionActor, Watching};
-use idfm_proxy::siri_stuff::SiriFetcher;
-use idfm_proxy::status::status;
-use idfm_proxy::templates;
+use actix_web::{middleware, web, App, HttpServer};
+use color_eyre::eyre::format_err;
+use objects::{LineReference, StopReference};
 use tracing_subscriber::{filter::targets::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
-#[get("/ws")]
-async fn websocket(
-    req: HttpRequest,
-    stream: web::Payload,
-    central: web::Data<Addr<CentralDispatch>>,
-) -> Result<HttpResponse, actix_web::Error> {
-    tracing::info!("new websocket");
-
-    ws::start(
-        SessionActor {
-            central: central.as_ref().clone(),
-            watching: Watching::Index,
-        },
-        &req,
-        stream,
-    )
-}
-
-#[get("/ws/lines/{line_ref}")]
-async fn line_websocket(
-    req: HttpRequest,
-    line_ref: web::Path<String>,
-    stream: web::Payload,
-    central: web::Data<Addr<CentralDispatch>>,
-) -> Result<HttpResponse, actix_web::Error> {
-    tracing::info!("new websocket watching {line_ref}");
-
-    ws::start(
-        SessionActor {
-            central: central.as_ref().clone(),
-            watching: Watching::Line(line_ref.clone()),
-        },
-        &req,
-        stream,
-    )
-}
-
-#[get("/")]
-async fn index() -> impl Responder {
-    let s = templates::TEMPLATES
-        .render("index.html", &tera::Context::new())
-        .unwrap();
-    HttpResponse::Ok().content_type("text/html").body(s)
-}
-
-#[get("/lines/{id}")]
-async fn line(line_ref: web::Path<String>) -> impl Responder {
-    let mut context = tera::Context::new();
-    context.insert("line_ref", &line_ref.as_str());
-    let s = templates::TEMPLATES
-        .render("line_index.html", &context)
-        .unwrap();
-    HttpResponse::Ok().content_type("text/html").body(s)
-}
+mod actors;
+mod messages;
+mod objects;
+mod routes;
+mod status;
+mod templates;
+use actors::*;
+use routes::*;
 
 fn setup_logger() {
     color_eyre::install().unwrap();
@@ -153,7 +99,7 @@ async fn main() -> color_eyre::Result<()> {
                     .flat_map(|frame| frame.estimated_vehicle_journey)
             })
             .collect();
-        dispatch_addr.do_send(SiriUpdate { vjs });
+        dispatch_addr.do_send(messages::SiriUpdate { vjs });
         tracing::info!("Re-using old data");
     }
 
@@ -167,7 +113,7 @@ async fn main() -> color_eyre::Result<()> {
     }
     .start();
 
-    let _gtfs_fetch = GtfsFetcher {
+    let _gtfs_fetch = actors::GtfsFetcher {
         dispatch: dispatch_addr.clone(),
     }
     .start();
@@ -179,7 +125,7 @@ async fn main() -> color_eyre::Result<()> {
             .service(actix_files::Files::new("/static", "./static"))
             .service(index)
             .service(line)
-            .service(status)
+            .service(status::status)
             .service(websocket)
             .service(line_websocket)
     })

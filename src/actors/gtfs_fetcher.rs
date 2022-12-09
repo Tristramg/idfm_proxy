@@ -1,4 +1,4 @@
-use crate::central_dispatch::CentralDispatch;
+use crate::CentralDispatch;
 use actix::prelude::*;
 use color_eyre::eyre::Result;
 use gtfs_structures::Gtfs;
