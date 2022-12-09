@@ -8,14 +8,14 @@ use color_eyre::eyre::format_err;
 use objects::{LineReference, StopReference};
 use tracing_subscriber::{filter::targets::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
-mod actions;
 mod actors;
 mod messages;
 mod objects;
+mod routes;
 mod status;
 mod templates;
-use actions::*;
 use actors::*;
+use routes::*;
 
 fn setup_logger() {
     color_eyre::install().unwrap();
