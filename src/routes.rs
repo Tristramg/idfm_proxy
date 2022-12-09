@@ -10,6 +10,7 @@ async fn websocket(
     req: HttpRequest,
     stream: web::Payload,
     central: web::Data<Addr<CentralDispatch>>,
+    data_store: web::Data<Addr<DataStore>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     tracing::info!("new websocket");
 
@@ -17,6 +18,7 @@ async fn websocket(
         SessionActor {
             central: central.as_ref().clone(),
             watching: Watching::Index,
+            data_store: data_store.as_ref().clone(),
         },
         &req,
         stream,
@@ -29,6 +31,7 @@ async fn line_websocket(
     line_ref: web::Path<String>,
     stream: web::Payload,
     central: web::Data<Addr<CentralDispatch>>,
+    data_store: web::Data<Addr<DataStore>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     tracing::info!("new websocket watching {line_ref}");
 
@@ -36,6 +39,7 @@ async fn line_websocket(
         SessionActor {
             central: central.as_ref().clone(),
             watching: Watching::Line(line_ref.clone()),
+            data_store: data_store.as_ref().clone(),
         },
         &req,
         stream,

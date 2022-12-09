@@ -31,3 +31,7 @@ pub struct DataUpdate {
 #[derive(Message, Clone)]
 #[rtype(result = "Arc<Status>")]
 pub struct StatusDemand {}
+
+#[derive(Message, Clone)]
+#[rtype(result = "Option<Arc<crate::objects::PTData>>")]
+pub struct CurrentPTData {}

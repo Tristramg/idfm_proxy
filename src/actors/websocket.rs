@@ -1,10 +1,11 @@
-use crate::actors::CentralDispatch;
-use crate::messages::{Connect, DataUpdate};
+use crate::actors::{CentralDispatch, DataStore};
+use crate::messages::{Connect, CurrentPTData, DataUpdate};
 use crate::templates::TEMPLATES;
 use actix::prelude::*;
 use actix_web_actors::ws;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
+    pub data_store: Addr<DataStore>,
     pub watching: Watching,
 }
 
@@ -20,7 +21,17 @@ impl Actor for SessionActor {
         tracing::info!("New session actor started");
         self.central.do_send(Connect {
             addr: ctx.address().recipient(),
-        })
+        });
+
+        self.data_store
+            .send(CurrentPTData {})
+            .into_actor(self)
+            .map(|result, _act, ctx| {
+                if let Ok(Some(pt_data)) = result {
+                    ctx.notify(DataUpdate { pt_data });
+                }
+            })
+            .wait(ctx);
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
