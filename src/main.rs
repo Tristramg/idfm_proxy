@@ -13,7 +13,6 @@ mod messages;
 mod objects;
 mod routes;
 mod status;
-mod templates;
 use actors::*;
 use routes::*;
 
@@ -122,11 +121,14 @@ async fn main() -> color_eyre::Result<()> {
     }
     .start();
 
+    let templates = actors::Templates::new().start();
+
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
             .app_data(web::Data::new(dispatch_addr.clone()))
             .app_data(web::Data::new(data_store.clone()))
+            .app_data(web::Data::new(templates.clone()))
             .service(actix_files::Files::new("/static", "./static"))
             .service(index)
             .service(line)

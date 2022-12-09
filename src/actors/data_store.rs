@@ -22,9 +22,7 @@ impl Handler<SiriUpdate> for DataStore {
         tracing::info!("Fresh SIRI data with {} vehicle journeys", msg.vjs.len());
         let pt_data = Arc::new(self.join_siri_and_theorical(msg.vjs));
         self.pt_data = Some(pt_data.clone());
-        self.central_dispatch.do_send(DataUpdate {
-            pt_data: pt_data.clone(),
-        });
+        self.central_dispatch.do_send(DataUpdate { pt_data });
     }
 }
 

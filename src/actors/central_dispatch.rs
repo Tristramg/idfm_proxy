@@ -18,7 +18,7 @@ impl Handler<Connect> for CentralDispatch {
 
     fn handle(&mut self, msg: Connect, _ctx: &mut Self::Context) {
         tracing::info!("New watcher");
-        self.sessions.push(msg.addr.clone());
+        self.sessions.push(msg.addr);
     }
 }
 

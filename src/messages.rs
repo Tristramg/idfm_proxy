@@ -35,3 +35,10 @@ pub struct StatusDemand {}
 #[derive(Message, Clone)]
 #[rtype(result = "Option<Arc<crate::objects::PTData>>")]
 pub struct CurrentPTData {}
+
+#[derive(Message, Clone)]
+#[rtype(result = "tera::Result<String>")]
+pub struct RenderTemplate<'a> {
+    pub template: &'a str,
+    pub context: tera::Context,
+}

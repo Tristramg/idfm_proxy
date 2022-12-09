@@ -1,5 +1,5 @@
 use crate::actors::*;
-use crate::templates;
+use crate::messages::RenderTemplate;
 use actix::prelude::*;
 use actix_web::{get, web, HttpRequest, HttpResponse, Responder};
 use actix_web_actors::ws;
@@ -11,6 +11,7 @@ async fn websocket(
     stream: web::Payload,
     central: web::Data<Addr<CentralDispatch>>,
     data_store: web::Data<Addr<DataStore>>,
+    templates: web::Data<Addr<Templates>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     tracing::info!("new websocket");
 
@@ -19,6 +20,7 @@ async fn websocket(
             central: central.as_ref().clone(),
             watching: Watching::Index,
             data_store: data_store.as_ref().clone(),
+            templates: templates.as_ref().clone(),
         },
         &req,
         stream,
@@ -32,6 +34,7 @@ async fn line_websocket(
     stream: web::Payload,
     central: web::Data<Addr<CentralDispatch>>,
     data_store: web::Data<Addr<DataStore>>,
+    templates: web::Data<Addr<Templates>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     tracing::info!("new websocket watching {line_ref}");
 
@@ -40,6 +43,7 @@ async fn line_websocket(
             central: central.as_ref().clone(),
             watching: Watching::Line(line_ref.clone()),
             data_store: data_store.as_ref().clone(),
+            templates: templates.as_ref().clone(),
         },
         &req,
         stream,
@@ -47,19 +51,32 @@ async fn line_websocket(
 }
 
 #[get("/")]
-async fn index() -> impl Responder {
-    let s = templates::TEMPLATES
-        .render("index.html", &tera::Context::new())
+async fn index(templates: web::Data<Addr<Templates>>) -> impl Responder {
+    let s = templates
+        .send(RenderTemplate {
+            template: "index.html",
+            context: tera::Context::new(),
+        })
+        .await
+        .unwrap()
         .unwrap();
     HttpResponse::Ok().content_type("text/html").body(s)
 }
 
 #[get("/lines/{id}")]
-async fn line(line_ref: web::Path<String>) -> impl Responder {
+async fn line(
+    line_ref: web::Path<String>,
+    templates: web::Data<Addr<Templates>>,
+) -> impl Responder {
     let mut context = tera::Context::new();
     context.insert("line_ref", &line_ref.as_str());
-    let s = templates::TEMPLATES
-        .render("line_index.html", &context)
+    let s = templates
+        .send(RenderTemplate {
+            template: "line_index.html",
+            context,
+        })
+        .await
+        .unwrap()
         .unwrap();
     HttpResponse::Ok().content_type("text/html").body(s)
 }
