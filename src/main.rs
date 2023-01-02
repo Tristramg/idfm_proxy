@@ -13,7 +13,6 @@ mod messages;
 mod objects;
 mod routes;
 mod status;
-mod templates;
 use actors::*;
 use routes::*;
 
@@ -72,9 +71,6 @@ async fn main() -> color_eyre::Result<()> {
 
     let dispatch_addr = CentralDispatch {
         sessions: Vec::new(),
-        pt_data: None,
-        line_referential: Arc::new(parse_line_referential()?),
-        stop_referential: Arc::new(parse_stop_referential()?),
     }
     .start();
 
@@ -84,6 +80,13 @@ async fn main() -> color_eyre::Result<()> {
             serde_json::from_str::<siri_lite::siri::SiriResponse>(&json)
                 .map_err(|_| format_err!("casting err"))
         });
+    let data_store = DataStore {
+        central_dispatch: dispatch_addr.clone(),
+        pt_data: None,
+        line_referential: Arc::new(parse_line_referential()?),
+        stop_referential: Arc::new(parse_stop_referential()?),
+    }
+    .start();
 
     if let Ok(old_data) = old_data {
         let vjs = old_data
@@ -99,7 +102,7 @@ async fn main() -> color_eyre::Result<()> {
                     .flat_map(|frame| frame.estimated_vehicle_journey)
             })
             .collect();
-        dispatch_addr.do_send(messages::SiriUpdate { vjs });
+        data_store.do_send(messages::SiriUpdate { vjs });
         tracing::info!("Re-using old data");
     }
 
@@ -109,19 +112,23 @@ async fn main() -> color_eyre::Result<()> {
             .expect("Missing API_KEY environment variable")
             .to_string(),
         uri: "https://prim.iledefrance-mobilites.fr/marketplace/estimated-timetable".to_string(),
-        dispatch: dispatch_addr.clone(),
+        data_store: data_store.clone(),
     }
     .start();
 
     let _gtfs_fetch = actors::GtfsFetcher {
-        dispatch: dispatch_addr.clone(),
+        dispatch: data_store.clone(),
     }
     .start();
+
+    let templates = actors::Templates::new().start();
 
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
             .app_data(web::Data::new(dispatch_addr.clone()))
+            .app_data(web::Data::new(data_store.clone()))
+            .app_data(web::Data::new(templates.clone()))
             .service(actix_files::Files::new("/static", "./static"))
             .service(index)
             .service(line)

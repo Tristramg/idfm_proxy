@@ -1,4 +1,4 @@
-use crate::CentralDispatch;
+use crate::DataStore;
 use actix::prelude::*;
 use color_eyre::eyre::Result;
 use gtfs_structures::Gtfs;
@@ -9,7 +9,7 @@ pub struct FetchSiri;
 
 #[derive(Clone)]
 pub struct GtfsFetcher {
-    pub dispatch: Addr<CentralDispatch>,
+    pub dispatch: Addr<DataStore>,
 }
 
 impl Actor for GtfsFetcher {

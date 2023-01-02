@@ -1,16 +1,38 @@
-use crate::actors::CentralDispatch;
-use crate::messages::{Connect, DataUpdate};
-use crate::templates::TEMPLATES;
+use crate::actors::{CentralDispatch, DataStore, Templates};
+use crate::messages::*;
 use actix::prelude::*;
 use actix_web_actors::ws;
 pub struct SessionActor {
     pub central: Addr<CentralDispatch>,
+    pub data_store: Addr<DataStore>,
+    pub templates: Addr<Templates>,
     pub watching: Watching,
 }
 
 pub enum Watching {
     Index,
     Line(String),
+}
+
+impl SessionActor {
+    fn render(
+        &self,
+        ws_ctx: &mut ws::WebsocketContext<Self>,
+        template: &'static str,
+        context: tera::Context,
+    ) {
+        self.templates
+            .send(RenderTemplate { template, context })
+            .into_actor(self)
+            .map(|result, _act, ctx| {
+                if let Ok(Ok(html)) = result {
+                    ctx.text(html)
+                } else {
+                    tracing::error!("When rendering template template {:?}", result);
+                }
+            })
+            .wait(ws_ctx);
+    }
 }
 
 impl Actor for SessionActor {
@@ -20,7 +42,17 @@ impl Actor for SessionActor {
         tracing::info!("New session actor started");
         self.central.do_send(Connect {
             addr: ctx.address().recipient(),
-        })
+        });
+
+        self.data_store
+            .send(CurrentPTData {})
+            .into_actor(self)
+            .map(|result, _act, ctx| {
+                if let Ok(Some(pt_data)) = result {
+                    ctx.notify(DataUpdate { pt_data });
+                }
+            })
+            .wait(ctx);
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -34,30 +66,23 @@ impl Handler<DataUpdate> for SessionActor {
     fn handle(&mut self, msg: DataUpdate, ctx: &mut Self::Context) {
         match self.watching {
             Watching::Index => {
-                let template = crate::templates::Lines {
-                    lines: &msg.pt_data.lines,
-                };
-                let text = TEMPLATES
-                    .render(
-                        "line_list.html",
-                        &tera::Context::from_serialize(&template).unwrap(),
-                    )
-                    .unwrap();
-                ctx.text(text)
+                let mut context = tera::Context::new();
+                context.insert("lines", &msg.pt_data.lines);
+                self.render(ctx, "line_list.html", context);
             }
             Watching::Line(ref line_ref) => {
                 let l = msg.pt_data.lines.get(line_ref);
                 if let Some(line) = l {
-                    let text = TEMPLATES
-                        .render("line.html", &tera::Context::from_serialize(line).unwrap())
-                        .unwrap();
-                    ctx.text(text)
+                    self.render(
+                        ctx,
+                        "line.html",
+                        tera::Context::from_serialize(line).unwrap(),
+                    );
                 } else {
                     // 404
                     let mut context = tera::Context::new();
                     context.insert("line_ref", &line_ref.as_str());
-                    let text = TEMPLATES.render("line_not_found.html", &context).unwrap();
-                    ctx.text(text)
+                    self.render(ctx, "line_not_found.html", context);
                 }
             }
         }

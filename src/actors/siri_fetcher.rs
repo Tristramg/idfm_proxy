@@ -1,4 +1,4 @@
-use super::CentralDispatch;
+use super::DataStore;
 use crate::messages::SiriUpdate;
 use actix::prelude::*;
 use color_eyre::eyre::{eyre, ErrReport, Result};
@@ -11,7 +11,7 @@ pub struct FetchSiri;
 
 #[derive(Clone)]
 pub struct SiriFetcher {
-    pub dispatch: Addr<CentralDispatch>,
+    pub data_store: Addr<DataStore>,
     pub uri: String,
     pub apikey: String,
 }
@@ -35,7 +35,7 @@ impl SiriFetcher {
         fetch(u, k)
             .into_actor(self)
             .map(|r, act, _ctx| match r {
-                Ok(data) => act.dispatch.do_send(SiriUpdate { vjs: data }),
+                Ok(data) => act.data_store.do_send(SiriUpdate { vjs: data }),
                 Err(e) => tracing::info!(" {e}"),
             })
             .wait(ctx);
