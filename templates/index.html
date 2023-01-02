@@ -7,34 +7,34 @@
 <div class="hero hero-sm bg-secondary">
     <div class="hero-body">
         <h2>Présentation du projet</h2>
-        <p>L’autorité organisatrice des transport en <a href="https://www.iledefrance-mobilites.fr/">Île-de-France Mobilités</a> diffuse
+        <p>L’autorité organisatrice des transport en Île-de-France, <a href="https://www.iledefrance-mobilites.fr/">Île-de-France Mobilités</a> diffuse
             les informations temps réel (avance/retard) sur sa plateforme <a href="https://prim.iledefrance-mobilites.fr">PRIM</a>.</p>
-        <p>Ces données présentent quelques freins à leur utilisation :
+        <p>Ces données présentent quelques freins à leur utilisation :
             <ul>
-                <li>Mauvaises performances (~30 secondes pour obtenir les données)</li>
-                <li>Format <a href="http://www.normes-donnees-tc.org/format-dechange/donnees-temps-reel/">SIRI-Lite</a> pénible à parser</li>
-                <li>Obligation d’identification</li>
-                <li><a href="https://prim.iledefrance-mobilites.fr/fr/licences">« Licence » moblilité</a> totalement ubuesque qui donne un droit de regard sur la manière d’utiliser les données</li>
+                <li>Mauvaises performances (~30 secondes pour obtenir les données) ;</li>
+                <li>Format <a href="http://www.normes-donnees-tc.org/format-dechange/donnees-temps-reel/">SIRI-Lite</a> pénible à parser ;</li>
+                <li>Obligation d’identification ;</li>
+                <li><a href="https://prim.iledefrance-mobilites.fr/fr/licences">« Licence » moblilité</a> totalement ubuesque qui donne un droit de regard sur la manière d’utiliser les données.</li>
             </ul>
         </p>
         <p>
-            Ce site a pour but de répondre aux trois premiers points :
+            Ce site a pour but de répondre aux trois premiers points :
             <ul>
                 <li>Le dernier jeu de données est disponible <a href="/static/data/idfm_estimated_timetable.latest.json">sur ce lien</a>,
                     <ul>
-                        <li>sans identification</li>
-                        <li>en respectant les en-tête <code>If-None-Match</code> (etag) et <code>If-Modified-Since</code> : n’hésitez pas à vérifier toutes les secondes s’il y a du nouveau</li>
-                        <li>attention: il y a une latence entre le moment où on déclenche le téléchargement (toutes les 90 secondes) et le moment où la donnée est téléchargée. Il peut donc y avoir jusqu’à 2 à 3 minutes de décallage</li>
+                        <li>sans identification ;</li>
+                        <li>en respectant les en-têtes <code>If-None-Match</code> (etag) et <code>If-Modified-Since</code> : n’hésitez pas à vérifier toutes les secondes s’il y a du nouveau ;</li>
+                        <li>attention: il y a une latence entre le moment où on déclenche le téléchargement (toutes les 90 secondes) et le moment où la donnée est téléchargée. Il peut donc y avoir jusqu’à 2 à 3 minutes de décallage.</li>
                     </ul>
                 </li>
                 <li>Des pages par ligne permettent de suivre l’état de la ligne qui vous intéresse. À venir :
                     <ul>
-                        <li>Suivre par arrêt</li>
-                        <li>Accéder à la donnée en format simplifié</li>
+                        <li>Suivre par arrêt ;</li>
+                        <li>Accéder à la donnée en format simplifié.</li>
                     </ul>
                 </li>
-                <li>Tout le code est libre sous licence WTFPL et disponible sur <a href="https://github.com/Tristramg/idfm_proxy">github</a></li>
-                <li>Pour le torchon qui est présenté comme une licence, débrouillez-vous au mieux pour la respecter. Les données diffusées le sont sous la licence mobilité selon l’interprêtation par Île-de-France Mobilités</li>
+                <li>Tout le code est libre sous licence WTFPL et disponible sur <a href="https://github.com/Tristramg/idfm_proxy">github</a>.</li>
+                <li>Pour le torchon qui est présenté comme une licence, débrouillez-vous au mieux pour la respecter. Les données diffusées le sont sous la licence mobilité selon l’interprétation par Île-de-France Mobilités.</li>
             </ul>
         </p>
     </div>
@@ -44,6 +44,6 @@
 </div>
 
 <div id="messages">
-    <p>Pour l’instant pas de données, veuillez patienter</p>
+    <p>Pour l’instant pas de données, veuillez patienter.</p>
 </div>
 {% endblock %}
